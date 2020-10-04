@@ -1,7 +1,8 @@
 "use strict";
 
 function setup() {
-    let c = createCanvas(744, 1392); //,SVG);
+    let c = createCanvas(512, 512); //,SVG);
+
     let y = 10;
 
     let button = createButton("save");
@@ -10,10 +11,10 @@ function setup() {
         saveCanvas(c, "save.png");
     });
 
-    let inputWidth = createInput("744");
+    let inputWidth = createInput("512");
     inputWidth.position(20, y);
     inputWidth.style("width", "50px");
-    let inputHeight = createInput("1392");
+    let inputHeight = createInput("512");
     inputHeight.position(80, y);
     inputHeight.style("width", "50px");
     inputWidth.input(() => {
@@ -30,7 +31,7 @@ function setup() {
     offsetXSlider.style("width", "100px");
     offsetXSlider.input((x) => {
         offset = createVector(
-            Number(offsetXSlider.value()),
+            400 - Number(offsetXSlider.value()),
             Number(offsetYSlider.value())
         );
         redrawFast();
@@ -40,15 +41,18 @@ function setup() {
     offsetYSlider.style("width", "100px");
     offsetYSlider.input((x) => {
         offset = createVector(
-            Number(offsetXSlider.value()),
+            400 - Number(offsetXSlider.value()),
             Number(offsetYSlider.value())
         );
         redrawFast();
     });
     offset = createVector(
-        Number(offsetXSlider.value()),
+        400 - Number(offsetXSlider.value()),
         Number(offsetYSlider.value())
     );
+
+    let s = createSpan("transaltion");
+    s.position(220, y);
 
     y += 20;
 
@@ -66,9 +70,12 @@ function setup() {
     });
     hexS = Number(hexSSlider.value());
 
+    s = createSpan("scale");
+    s.position(220, y);
+
     y += 20;
 
-    let minHexSSlider = createSlider(1, 200, 8);
+    let minHexSSlider = createSlider(1, 200, 0);
     minHexSSlider.position(10, y);
     minHexSSlider.style("width", "200px");
     minHexSSlider.input(() => {
@@ -76,6 +83,9 @@ function setup() {
         redrawFast();
     });
     minHexS = Number(minHexSSlider.value());
+
+    s = createSpan("center size");
+    s.position(220, y);
 
     y += 20;
 
@@ -88,6 +98,9 @@ function setup() {
     });
     rot = Number(rotSlider.value());
 
+    s = createSpan("rotation");
+    s.position(220, y);
+
     y += 20;
 
     let swirlSlider = createSlider(0, 360, 90);
@@ -98,6 +111,9 @@ function setup() {
         redrawFast();
     });
     swirl = Number(swirlSlider.value());
+
+    s = createSpan("twist");
+    s.position(220, y);
 
     y += 20;
 
@@ -110,6 +126,9 @@ function setup() {
     });
     layerCnt = round(min(2048, exp(Number(layerSlider.value()))));
 
+    s = createSpan("line count");
+    s.position(220, y);
+
     y += 20;
 
     let strokeSlider = createSlider(log(0.001), log(2), log(1), 0.002);
@@ -121,16 +140,19 @@ function setup() {
     });
     strokeW = exp(Number(strokeSlider.value()));
 
-    y += 20;
+    s = createSpan("line width");
+    s.position(220, y);
 
-    let multiplierSlider = createSlider(1, 10, 1, 1);
-    multiplierSlider.position(10, y);
-    multiplierSlider.style("width", "200px");
-    multiplierSlider.input(() => {
-        multiplier = Number(multiplierSlider.value());
-        redrawFast();
-    });
-    multiplier = Number(multiplierSlider.value());
+    // y += 20;
+
+    // let multiplierSlider = createSlider(1, 10, 1, 1);
+    // multiplierSlider.position(10, y);
+    // multiplierSlider.style("width", "200px");
+    // multiplierSlider.input(() => {
+    //     multiplier = Number(multiplierSlider.value());
+    //     redrawFast();
+    // });
+    // multiplier = Number(multiplierSlider.value());
 
     y += 20;
 
@@ -152,6 +174,9 @@ function setup() {
     });
     colorCenterStrength = Number(colorCenterSlider.value());
 
+    s = createSpan("center color/strength");
+    s.position(220, y);
+
     y += 20;
 
     let colorBorderPicker = createColorPicker("#fff");
@@ -172,17 +197,78 @@ function setup() {
     });
     colorBorderStrength = Number(colorBorderSlider.value());
 
+    s = createSpan("border color/strength");
+    s.position(220, y);
+
     angleMode(DEGREES);
 
     colorA = color("#FFBB03");
     //ca = createVector(1800,20);
     ca = createVector(500, 100);
 
+    colorAPicker = createColorPicker(colorA);
+    colorAPicker.position(ca.x, ca.y);
+    colorAPicker.style("height", "20px");
+    colorAPicker.input(() => {
+        colorA = colorAPicker.color();
+        redrawFast();
+    });
+
     colorB = color("#FF0075");
     //cb = createVector(120,1800);
-    cb = createVector(0, 500);
+    cb = createVector(0, 1000);
+
+    colorBPicker = createColorPicker(colorB);
+    colorBPicker.position(cb.x, cb.y);
+    colorBPicker.style("height", "20px");
+    colorBPicker.input(() => {
+        colorB = colorBPicker.color();
+        redrawFast();
+    });
 
     loop();
+}
+
+let colorAPicker;
+let colorBPicker;
+let mPosD;
+let mPicker;
+let mPickCenter;
+
+function mousePressed() {
+    let posD = createVector(mouseX, mouseY);
+
+    if (posD.dist(ca) < 80) {
+        mPosD = posD;
+        mPicker = colorAPicker;
+        mPickCenter = ca;
+    } else if (posD.dist(cb) < 80) {
+        mPosD = posD;
+        mPicker = colorBPicker;
+        mPickCenter = cb;
+    }
+    print(posD);
+    print(mPosD)
+}
+
+function mouseReleased() {
+    mPosD = null;
+    redrawFast();
+}
+
+function mouseDragged() {
+    if (mPosD) {
+        let posD = createVector(mouseX, mouseY);
+        mPosD.sub(posD);
+
+        mPickCenter.sub(mPosD);
+        mPicker.position(mPickCenter.x, mPickCenter.y);
+        print(mPosD);
+
+        mPosD = posD;
+
+        redrawFast();
+    }
 }
 
 let cancle = true;
