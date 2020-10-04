@@ -204,7 +204,7 @@ function setup() {
 
     colorA = color("#FFBB03");
     //ca = createVector(1800,20);
-    ca = createVector(500, 100);
+    ca = createVector(460, 300);
 
     colorAPicker = createColorPicker(colorA);
     colorAPicker.position(ca.x, ca.y);
@@ -216,7 +216,7 @@ function setup() {
 
     colorB = color("#FF0075");
     //cb = createVector(120,1800);
-    cb = createVector(0, 1000);
+    cb = createVector(0, 480);
 
     colorBPicker = createColorPicker(colorB);
     colorBPicker.position(cb.x, cb.y);
