@@ -1,5 +1,7 @@
 "use strict";
 
+let p5V = p5.Vector;
+
 function setup() {
     let c = createCanvas(512, 512); //,SVG);
 
@@ -11,10 +13,10 @@ function setup() {
         saveCanvas(c, "save.png");
     });
 
-    let inputWidth = createInput("512");
+    let inputWidth = createInput("712");
     inputWidth.position(20, y);
     inputWidth.style("width", "50px");
-    let inputHeight = createInput("512");
+    let inputHeight = createInput("712");
     inputHeight.position(80, y);
     inputHeight.style("width", "50px");
     inputWidth.input(() => {
@@ -202,35 +204,26 @@ function setup() {
 
     angleMode(DEGREES);
 
-    colorA = color("#FFBB03");
-    //ca = createVector(1800,20);
-    ca = createVector(460, 300);
+    colors = [
+        { color: color("#FFBB03"), pos: createVector(460, 300) },
+        { color: color("#FF0075"), pos: createVector(0, 480) },
+        { color: color("#0BEEA0"), pos: createVector(460, 480) }
+    ];
 
-    colorAPicker = createColorPicker(colorA);
-    colorAPicker.position(ca.x, ca.y);
-    colorAPicker.style("height", "20px");
-    colorAPicker.input(() => {
-        colorA = colorAPicker.color();
-        redrawFast();
-    });
-
-    colorB = color("#FF0075");
-    //cb = createVector(120,1800);
-    cb = createVector(0, 480);
-
-    colorBPicker = createColorPicker(colorB);
-    colorBPicker.position(cb.x, cb.y);
-    colorBPicker.style("height", "20px");
-    colorBPicker.input(() => {
-        colorB = colorBPicker.color();
-        redrawFast();
-    });
+    for (let c of colors) {
+        c.picker = createColorPicker(c.color);
+        c.picker.position(c.pos.x, c.pos.y);
+        c.picker.style("height", "20px");
+        c.picker.input(() => {
+            c.color = c.picker.color();
+            redrawFast();
+        });
+    }
 
     loop();
 }
 
-let colorAPicker;
-let colorBPicker;
+let colors;
 let mPosD;
 let mPicker;
 let mPickCenter;
@@ -238,17 +231,14 @@ let mPickCenter;
 function mousePressed() {
     let posD = createVector(mouseX, mouseY);
 
-    if (posD.dist(ca) < 80) {
-        mPosD = posD;
-        mPicker = colorAPicker;
-        mPickCenter = ca;
-    } else if (posD.dist(cb) < 80) {
-        mPosD = posD;
-        mPicker = colorBPicker;
-        mPickCenter = cb;
+    for (let c of colors) {
+        if (posD.dist(c.pos) < 80) {
+            mPosD = posD;
+            mPicker = c.picker;
+            mPickCenter = c.pos;
+            break;
+        }
     }
-    print(posD);
-    print(mPosD)
 }
 
 function mouseReleased() {
@@ -263,7 +253,6 @@ function mouseDragged() {
 
         mPickCenter.sub(mPosD);
         mPicker.position(mPickCenter.x, mPickCenter.y);
-        print(mPosD);
 
         mPosD = posD;
 
@@ -309,12 +298,12 @@ function draw() {
 
     let dV = createVector(0, hexH).rotate(rot);
     let dH = createVector(hexW, 0).rotate(rot);
-    let dH3 = dH.copy().mult(3);
+    let dH3 = p5V.mult(dH, 3);
 
     let cHeight = height;
     let cWidth = width;
 
-    let maxY = cHeight + hexS - dH.y * ceil(width / dH.x);
+    let maxY = cHeight + hexS * 2 - dH.y * ceil(width / dH.x);
 
     for (let tStart = performance.now();
         (performance.now() - tStart < 33) && layerNr < layerCnt * multiplier; layerNr++) {
@@ -339,9 +328,9 @@ function draw() {
                 dO = createVector(hexW * 1.5, 0).rotate(rot);
             }
 
-            let pHor = dH.copy().add(pVert).add(dO);
+            let pHor = p5V.add(dH, pVert).add(dO);
 
-            pHor.sub(dH3.copy().mult(floor((pHor.x + hexS) / dH3.x)));
+            pHor.sub(p5V.mult(dH3, floor((pHor.x + hexS) / dH3.x)));
 
             for (; pHor.x < cWidth + hexS && pHor.y > -hexS; pHor.add(dH3)) {
                 if (pHor.y > cHeight + hexS)
@@ -367,19 +356,41 @@ function getRotation(s, ps) {
     return min(((s - ps) / s) * swirl, 30);
 }
 
-let colorA;
-let ca;
-
-let colorB;
-let cb;
-
 function setColor(v, d) {
-    let ab = p5.Vector.sub(cb, ca);
-    let av = p5.Vector.sub(v, ca);
 
-    let p = av.dot(ab) / ab.magSq();
+    let c;
 
-    let c = lerpColor(colorA, colorB, p);
+    if (colors.length == 2) {
+        let ab = p5V.sub(colors[1].pos, colors[0].pos);
+        let av = p5V.sub(v, colors[0].pos);
+
+        let p = av.dot(ab) / ab.magSq();
+        c = lerpColor(colors[0].color, colors[1].color, p);
+    }
+    if (colors.length == 3) {
+        let p = v;
+        let v1 = colors[0].pos;
+        let v2 = colors[1].pos;
+        let v3 = colors[2].pos;
+
+        let div = (v2.y - v3.y) * (v1.x - v3.x) +
+            (v3.x - v2.x) * (v1.y - v3.y);
+
+        let w0 = ((v2.y - v3.y) * (p.x - v3.x) +
+            (v3.x - v2.x) * (p.y - v3.y)) / div;
+
+        let w1 = ((v3.y - v1.y) * (p.x - v3.x) +
+            (v1.x - v3.x) * (p.y - v3.y)) / div;
+
+        let w2 = 1 - w0 - w1;
+        if (w0 < 0 || w1 < 0 || w2 < 0) {
+            c = lerpColor(colors[0].color, colors[1].color, w1 / (w0 + w1));
+            c = lerpColor(c, colors[2].color, w2);
+        } else {
+            c = lerpColor(colors[0].color, colors[1].color, w1 / (w0 + w1));
+            c = lerpColor(c, colors[2].color, w2);
+        }
+    }
 
     c = lerpColor(colorCenter, c, lerp(1 - colorCenterStrength, 1, d / hexS));
     c = lerpColor(c, colorBorder, lerp(0, colorBorderStrength, d / hexS));
@@ -396,10 +407,10 @@ function drawHex(p, s, r, sides = 6, drawHalf = false) {
 
     if (drawHalf) sides /= 2;
 
-    let lp = pO.copy().add(p);
+    let lp = p5V.add(pO, p);
     for (let i = 0; i < sides; i++) {
         pO.rotate(r);
-        let pp = pO.copy().add(p);
+        let pp = p5V.add(pO, p);
         setColor(
             createVector(pp.x + 0.5 * (lp.x - pp.x), pp.y + 0.5 * (lp.y - pp.y)),
             s
